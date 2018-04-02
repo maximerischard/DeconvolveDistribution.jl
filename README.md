@@ -6,18 +6,10 @@
 
 [![codecov.io](http://codecov.io/github/maximerischard/DeconvolveDistribution.jl/coverage.svg?branch=master)](http://codecov.io/github/maximerischard/DeconvolveDistribution.jl?branch=master)
 
-If $X$ comes from an unknown distribution
-$$
-    X_i \overset{iid}{\sim} F_X
-$$
-but we can only make noisy measurements
-$$
-    W_i = X_i + U_i
-$$
-where the distribution of $U_i$ is *known*,
+If `X` comes from an unknown distribution `F_X` but we can only make noisy measurements `W_i =  X_i + U_i` where the distribution of `U_i` is *known*,
 then the `Fhat` function provided by this package gives
-and estimate of $F_X$ given the sample $W$ and the
-error distributions of $U$.
+and estimate of `F_X` given the sample `W` and the
+error distribution of each sample.
 
 ```julia
 using DeconvolveDistribution
