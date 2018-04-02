@@ -1,20 +1,25 @@
     ϕK(t) = -1 < t < 1 ? (1.0-t^2) : 0.0
     
+    # sin(tx)/t
+    function sinc(t, x)
+        if abs(t) <= 1e-4
+            return x - t^2*x^3/6.0
+        else
+            return sin(t*x) / t
+        end
+    end
     """ 
         very literal implementation of equation 8.5
         in Wang&Wang 2011
     """
     function Fhatx_brute(x::Float64, W::AbstractVector, num_t::Int, h::Float64,
             U::AbstractVector{D} where D <: UnivariateDistribution)
-        quad_nodes, t_weight = FastGaussQuadrature.gausslegendre(num_t)
-        # FastGaussQuadrature outputs nodes from -1 to 1
-        # we need nodes from 0 to 1
-        htt = (quad_nodes .+ 1.0) ./ 2.0
+        quad_nodes, quad_weight = FastGaussQuadrature.gausslegendre(num_t)
+        htt = quad_nodes
         tt = htt ./ h
+        t_weight = quad_weight ./ h
 
         ϕKht = ϕK.(htt)
-        @assert ϕKht[1] ≈ 0.0
-        @assert ϕKht[end] ≈ 0.0
         n = length(W)
         s = 0.0
         sum_abs_ϕUkt = abs2.(cf.(U[1], tt))
@@ -23,13 +28,13 @@
         end
         mean_abs_ϕUkt = sum_abs_ϕUkt/n
         for j in 1:n
-            sintxW = sin.(tt.*(x-W[j]))
+            sinctxW = sinc.(tt, x-W[j])
             ϕUj = cf.(U[j], -tt)
-            ψUj = mean_abs_ϕUkt ./ ϕUj
-            s += dot(t_weight, sintxW .* ϕKht ./ tt ./ ψUj)
+            inv_ψUj = ϕUj ./ mean_abs_ϕUkt 
+            s += dot(t_weight, sinctxW .* ϕKht  .* inv_ψUj)
             isfinite(s) || throw(AssertionError("s=$s is not finite, j=$j"))
         end
-        Fx = 0.5 + 1/(π*n) * s / (2*h) # 2h is the Jacobian
+        Fx = 0.5 + 1/(2π*n) * s # 2h is the Jacobian
         @assert isfinite(Fx)
         (imag(Fx) ≈ 0.0) || AssertionError("Fx has non-negligible imaginary part $Fx") 
         return real(Fx)
@@ -74,7 +79,6 @@
                     sinctxW = @fastmath sin(t*(x-Wj))/t
                     scache_jt = scache_j[it]
                     s += scache_jt * sinctxW
-#                     s += t_weight[it] * sintxW * ϕKht[it] / ψUj[j][it] / t
                 end
             end
             F_xx[ix] = 0.5 + 1/(π*n) * s / (2*h) # 2h is the Jacobian
