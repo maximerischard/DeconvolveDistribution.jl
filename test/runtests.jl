@@ -1,12 +1,14 @@
+using Test
 using DeconvolveDistribution
 using Distributions
 using Base.Test
+import Random
 
 @testset "Fhat" begin
     n = 100
     F_X = MixtureModel([Normal(-1, 1), Normal(2, 0.8)], [0.6, 0.4])
     σ_distr = Gamma(1.0, 4.0)
-    srand(1)
+    Random.seed!(1)
     X = rand(F_X, n)
     σ = rand(σ_distr, n)
     U = Normal.(0.0, σ)
@@ -14,7 +16,7 @@ using Base.Test
     W = X .+ ϵ
 
     n_xx = 120
-    F_xx = collect(linspace(extrema(W)..., n_xx))
+    F_xx = collect(range(minimum(W), stop=maximum(W), length=n_xx))
     num_t = 50
     h = 0.5
     Fhat_xx = Fhat(F_xx, W, num_t, h, U)
@@ -32,7 +34,7 @@ end # testset
     n = 100
     F_X = MixtureModel([Normal(-1, 1), Normal(2, 0.8)], [0.6, 0.4])
     σ_distr = Gamma(1.0, 4.0)
-    srand(1)
+    Random.seed!(1)
     X = rand(F_X, n)
     σ = rand(σ_distr, n)
     U = Normal.(0.0, σ)
@@ -40,7 +42,7 @@ end # testset
     W = X .+ ϵ
 
     n_xx = 120
-    F_xx = collect(linspace(extrema(W)..., n_xx))
+    F_xx = collect(range(minimum(W), stop=maximum(W), length=n_xx))
     num_t = 20
     h = 0.5
     Fhat_xx = Fhat(F_xx, W, num_t, h, U)

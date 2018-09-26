@@ -1,9 +1,19 @@
 module DeconvolveDistribution
 
-using Distributions
 using FastGaussQuadrature
+import Distributions: params, partype,
+                      logpdf, pdf, cf,
+                      UnivariateDistribution,
+                      DiscreteUnivariateDistribution, 
+                      insupport, 
+                      Normal
+using Statistics: var
+using LinearAlgebra: diagm, norm
+using RCall
+import Optim
 
-include("heteroscedastic.jl")
+include("fourier.jl")
+include("expospline.jl")
 
 """
     Estimation using Fourier transforms leads
@@ -13,7 +23,7 @@ include("heteroscedastic.jl")
     as a post-processing step.
 """
 function fix_CDF!(Fhat_xx)
-    imedian = indmin(abs.(Fhat_xx .- 0.5))
+    imedian = argmin(abs.(Fhat_xx .- 0.5))
     # monotonically increasing from median up
     Fhat_xx[imedian:end] = accumulate(max, Fhat_xx[imedian:end])
     # monotonically decreasing from median down
