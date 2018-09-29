@@ -2,5 +2,5 @@ julia 0.7
 Distributions
 FastGaussQuadrature
 RCall
-LinearAlgebra
-Statistics
+StatsBase
+Optim
