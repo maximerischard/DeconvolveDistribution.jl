@@ -127,7 +127,7 @@ end
 ################
 # Optimization #
 ################
-function optimize(d, noise, X::Vector{Float64}, c0::Real)
+function decon(d, noise, X::Vector{Float64}, c0::Real)
     f = make_penalized_w_noise_pre(d, noise, X, c0)
     td = Optim.TwiceDifferentiable(f, copy(coefs(d)); autodiff=:forward)
     opt_reg = Optim.optimize(td, zero(coefs(d)), Optim.Newton())
