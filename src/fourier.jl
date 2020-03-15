@@ -93,17 +93,34 @@ end
     as a post-processing step.
 """
 function fix_CDF!(Fhat_xx)
-    imedian = argmin(abs.(Fhat_xx .- 0.5))
-    # monotonically increasing from median up
-    Fhat_xx[imedian:end] = accumulate(max, Fhat_xx[imedian:end])
-    # monotonically decreasing from median down
-    Fhat_xx[imedian:-1:1] = accumulate(min, Fhat_xx[imedian:-1:1])
-    n_xx = length(Fhat_xx)
-    for i in 1:n_xx
-        Fhat_xx[i] = min(Fhat_xx[i], 1.0)
-        Fhat_xx[i] = max(Fhat_xx[i], 0.0)
+    discretised_pdf = diff(Fhat_xx)
+    while minimum(discretised_pdf) < 0.0
+        imin = argmin(discretised_pdf)
+        pmin = discretised_pdf[imin]
+        discretised_pdf[imin] = 0.0
+        discretised_left = @view(discretised_pdf[imin-1:-1:1])
+        push_negative_prob!(discretised_left, pmin / 2)
+        discretised_right = @view(discretised_pdf[imin+1:end])
+        push_negative_prob!(discretised_right, pmin / 2)
     end
+    corrected_cdf = cumsum(discretised_pdf)
+    corrected_cdf .-= minimum(corrected_cdf)
+    corrected_cdf ./= maximum(corrected_cdf)
+    @assert maximum(corrected_cdf) ≈ 1.0
     Fhat_xx[1] = 0.0
-    Fhat_xx[end] = 1.0
+    Fhat_xx[2:end] .= corrected_cdf
     return Fhat_xx
+end
+function push_negative_prob!(prob_vec, p::Real)
+    i = 0
+    while p < 0
+        i += 1
+        if i == length(prob_vec)
+            p = 0.0
+            break
+        end
+        p += prob_vec[i] # pick this bit of probability up
+        prob_vec[i] = 0.0 # new probability is zero
+    end
+    prob_vec[i] = p
 end
