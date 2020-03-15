@@ -12,7 +12,7 @@ end
     very literal implementation of equation 8.5
     in Wang&Wang 2011
 """
-function Fhatx_brute(x::Float64, W::AbstractVector, num_t::Int, h::Float64,
+function Fhatx_brute(x::Real, W::AbstractVector, num_t::Int, h::Real,
         U::AbstractVector{D} where D <: UnivariateDistribution)
     quad_nodes, quad_weight = FastGaussQuadrature.gausslegendre(num_t)
     htt = quad_nodes
@@ -40,15 +40,15 @@ function Fhatx_brute(x::Float64, W::AbstractVector, num_t::Int, h::Float64,
     return real(Fx)
 end
 
-@inline function real_cf_Uj_t(Uj::UnivariateDistribution, t::Float64)
+@inline function real_cf_Uj_t(Uj::UnivariateDistribution, t::Real)
     return @fastmath real(cf(Uj, t))
 end
-@inline function real_cf_Uj_t(Uj::Normal, t::Float64)
+@inline function real_cf_Uj_t(Uj::Normal, t::Real)
     # assumes Uj has mean zero!
     return exp(-var(Uj)*t^2/2)
 end
 
-function Fhat(xx::Vector{Float64}, W::Vector{Float64}, num_t::Int, h::Float64, 
+function Fhat(xx::Vector{Float64}, W::Vector{Float64}, num_t::Int, h::Real, 
         U::Vector{D} where D <: UnivariateDistribution)
     quad_nodes, t_weight = FastGaussQuadrature.gausslegendre(num_t)
     # FastGaussQuadrature outputs nodes from -1 to 1

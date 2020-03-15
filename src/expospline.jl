@@ -4,7 +4,8 @@ function spline_basis(domain, p)
     return Q
 end
 
-struct ExpoSpline{T<:Real} <: DiscreteUnivariateDistribution
+struct Atomic <: Distributions.ValueSupport end
+struct ExpoSpline{T<:Real} <: UnivariateDistribution{Atomic}
     domain::Vector{Float64}
     Qbasis::Matrix{Float64} # basis matrix
     αcoef::Vector{T} # α
@@ -29,9 +30,13 @@ end
     # return d
 # end
 
+####################################
+# Expo Spline distribution methods #
+####################################
+
 params(d::ExpoSpline) = (d.αcoef, )
 coefs(d::ExpoSpline) = d.αcoef
-partype(d::ExpoSpline{T}) where {T<:Real} = T
+partype(d::ExpoSpline{T}) where T = T
 
 function log_sum_exp(x)
     # https://en.wikipedia.org/wiki/LogSumExp
