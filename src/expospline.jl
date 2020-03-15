@@ -175,7 +175,33 @@ function decon(d, noise, X::Vector{Float64}, c0::Real)
     f = make_penalized_w_noise_pre(d, noise, X, c0)
     td = Optim.TwiceDifferentiable(f, copy(coefs(d)); autodiff=:forward)
     opt_reg = Optim.optimize(td, zero(coefs(d)), Optim.Newton())
-    @assert Optim.converged(opt_reg)
-    d_optim = ExpoSpline(d.domain, d.Qbasis, Optim.minimizer(opt_reg))
+    best_x = Optim.minimizer(opt_reg)
+    best_y = Optim.minimum(opt_reg)
+    for _ in 1:5
+        if Optim.converged(opt_reg)
+            break
+        end
+        init_x = randn(length(coefs(d)))
+        opt_reg = Optim.optimize(td, init_x, Optim.Newton())
+        if Optim.minimum(opt_reg) < best_y
+            best_x = Optim.minimizer(opt_reg)
+            best_y = Optim.minimum(opt_reg)
+        end
+    end
+    for _ in 1:5
+        if Optim.converged(opt_reg)
+            break
+        end
+        init_x = randn(length(coefs(d)))
+        opt_reg = Optim.optimize(td, init_x, Optim.ConjugateGradient())
+        if Optim.minimum(opt_reg) < best_y
+            best_x = Optim.minimizer(opt_reg)
+            best_y = Optim.minimum(opt_reg)
+        end
+    end
+    if !Optim.converged(opt_reg)
+        @warn("decon failed to converge")
+    end
+    d_optim = ExpoSpline(d.domain, d.Qbasis, best_x)
     return d_optim
 end
