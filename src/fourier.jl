@@ -27,7 +27,7 @@ function Fhatx_brute(x::Real, W::AbstractVector, num_t::Int, h::Real,
         sum_abs_ϕUkt .+= abs2.(cf.(U[k], tt))
     end
     mean_abs_ϕUkt = sum_abs_ϕUkt/n
-    for j in 1:n
+    @inbounds for j in 1:n
         sinctxW = sinc.(tt, x-W[j])
         ϕUj = cf.(U[j], -tt)
         inv_ψUj = ϕUj ./ mean_abs_ϕUkt 
@@ -72,13 +72,12 @@ function Fhat(xx::Vector{Float64}, W::Vector{Float64}, num_t::Int, h::Real,
     @inbounds for (ix, x) in enumerate(xx)
         s = zero(Float64)
         for j in 1:n
-            Wj = W[j]
-            Uj = U[j]
+            Wj, Uj = W[j], U[j]
             scache_j = s_cache[j]
             for (it, t) in enumerate(tt)
-                sinctxW = @fastmath sin(t*(x-Wj))/t
-                scache_jt = scache_j[it]
-                s += scache_jt * sinctxW
+                # sinctxW = @fastmath sin(t*(x-Wj))/t
+                sinctxW = sinc(t, x-Wj)
+                s += scache_j[it] * sinctxW
             end
         end
         F_xx[ix] = 0.5 + 1/(π*n) * s / (2*h) # 2h is the Jacobian
