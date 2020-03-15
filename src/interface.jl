@@ -13,7 +13,8 @@ function piecewise_uniform(bin_edges::AbstractVector, weights::Weights)
     @assert length(bin_edges) == length(weights)+1
     @assert all(diff(bin_edges) .> 0)
     bin_uniforms = Uniform.(bin_edges[1:end-1], prevfloat.(bin_edges[2:end]))
-    mixture = MixtureModel(bin_uniforms, values(weights) / sum(weights)) # mixture of uniforms with equal weights
+    weights_vector = convert(Vector, weights)
+    mixture = MixtureModel(bin_uniforms, weights_vector / sum(weights)) # mixture of uniforms with equal weights
 end
 
 # function decon(X::Vector, σ_X::Vector, bw::Float64, grid::Vector; num_t=50, fixup=true)
