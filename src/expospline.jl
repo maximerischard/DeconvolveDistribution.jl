@@ -44,16 +44,55 @@ function log_sum_exp(x)
     log_sum_exp_x = max_x + log(sum(xi -> exp(xi-max_x), x))
     return log_sum_exp_x
 end
-logpdf(d::ExpoSpline{T}) where T = d.Qα .- d.φ_α             # equation (9)
-pdf(d::ExpoSpline{T}) where T = exp.(logpdf(d))
-logpdf(d::ExpoSpline{T}, j::Int) where {T} = d.Qα[j] - d.φ_α # equation (9)
-function logpdf(d::ExpoSpline{T}, x::Real) where {T}
+logpdf(d::ExpoSpline) = d.Qα .- d.φ_α             # equation (9)
+pdf(d::ExpoSpline) = exp.(logpdf(d))
+logpdf(d::ExpoSpline, j::Int) = d.Qα[j] - d.φ_α # equation (9)
+function logpdf(d::ExpoSpline, x::Real)
     j = argmin(abs.(d.domain .- x)) # not the fastest way to do this
     return logpdf(d, j)
 end
-function pdf(d::ExpoSpline{T}, x::Real) where {T}
+function pdf(d::ExpoSpline, x::Real)
     return exp(logpdf(d, x))
 end
+
+function logcdf(d::ExpoSpline)
+    max_x = maximum(d.Qα)
+    cumsum_exp_x = accumulate((s,xi) -> s + exp(xi - max_x), d.Qα; init=zero(max_x))
+    log_last = log(cumsum_exp_x[end])
+    lcdf = cumsum_exp_x # to modify in place
+    @inbounds for (i, x) in enumerate(cumsum_exp_x)
+        lcdf[i] = log(x) - log_last
+    end
+    return lcdf
+end
+cdf(d::ExpoSpline) = exp.(logcdf(d))
+cdf(d::ExpoSpline, j::Int) = exp(logcdf(d)[j]) # wasteful?
+function cdf(d::ExpoSpline, x::Real)
+    j = argmin(abs.(d.domain .- x)) # inefficient
+    return cdf(d, j)
+end
+
+function rand(d::ExpoSpline)
+    lcdf = logcdf(d)
+    logu = -Random.randexp()
+    i = searchsortedfirst(lcdf, logu)
+    return d.domain[min(i,length(lcdf))]
+end
+function rand(d::ExpoSpline, n::Int)
+    lcdf = logcdf(d)
+    logu = -Random.randexp(n)
+    r = similar(d.domain, n)
+    for j in 1:n
+        logu = -Random.randexp()
+        i = searchsortedfirst(lcdf, logu)
+        r[j] = d.domain[min(i,length(lcdf))]
+    end
+    return r
+end
+
+#################
+# Likelihood ####
+#################
 function get_logPi(domain::Vector{Float64}, noise::UnivariateDistribution, X_i::Float64)
     # unnormalized
     return logpdf.(noise, X_i.-domain)
